@@ -1,0 +1,161 @@
+﻿@using Google.Protobuf.WellKnownTypes
+@using Grpc.Core
+@using Grpc.Net.Client
+@using grpcServer.Protos
+
+@inject GrpcChannel Channel
+
+<PageTitle>Push Notification Component</PageTitle>
+
+<h3>Push Notification Component</h3>
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col">
+            <label class="folm-label">Subscribe to Case Update</label>
+           
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-primary" @onclick="Subscribe" disabled="@(cts != null)">Subscribe</button>
+            <button class="btn btn-danger" @onclick="Stop" disabled="@(cts == null)">Stop</button>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-4">
+            <label class="form-label">Case Name</label>
+        </div>
+        <div class="col-4">
+             <label class="form-label">Case Value</label>
+        </div>
+        <div class="col-4"></div>
+    </div>
+    <div class="row">
+        <div class="col-4">
+            <input @bind="caseName" placeHolder="name" class="form-control"/>
+        </div>
+        <div class="col-4">
+             <input type="number" @bind="caseValue" placeHolder="value" class="form-control"/>
+        </div>
+        <div class="col-4">
+            <button class="btn btn-secondary" @onclick="AddCase">Add</button>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="Col-12">
+            @if (responses == null)
+            {
+                <p><em>Loading...</em></p>
+            }
+            else
+            {
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Case Name</th>
+                            <th>Case Value</th>
+                            <th></th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                @foreach (var aCase in responses)
+                {
+                                <tr>
+                                    <td>@aCase.Name</td>
+                                    <td>@aCase.Value</td>
+                                    <td>@aCase.Time.ToDateTime().ToLongTimeString()</td>
+                                    <td><button class="btn btn-outline-danger" @onclick="()=>RemoveCase(aCase.Id)">Remove</button></td>
+                                </tr>
+                }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+
+    private CancellationTokenSource? cts;
+    private grpcServer.Protos.PushNotification.PushNotificationClient _client;
+    private IList<Case>? responses;
+
+    private string? caseName;
+    private int? caseValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _client = new grpcServer.Protos.PushNotification.PushNotificationClient(Channel);
+        responses = (await _client.GetAllAsync(new Empty())).Cases;
+    }
+
+    private async Task Subscribe()
+    {
+        cts = new CancellationTokenSource();
+
+        using var call = _client.Subscribe(new TopicRequest
+            {
+                Topic = "Case",
+                Time = new Google.Protobuf.WellKnownTypes.Timestamp()
+            }, cancellationToken: cts.Token);
+
+        try
+        {
+            await foreach (var message in call.ResponseStream.ReadAllAsync())
+            {
+                switch (message.CaseAction)
+                {
+                    case CaseAction.Add:
+                        responses?.Add(message.Case);
+                        StateHasChanged();
+                        break;
+                    case CaseAction.Remove:
+                        var tempCase = responses?.FirstOrDefault(c => c.Id == message.Case.Id);
+                        if (tempCase != null)
+                        {
+                            responses?.Remove(tempCase);
+                            StateHasChanged();
+                        }
+                        break;
+                }
+            }
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
+        {
+            // Ignore exception from cancellation
+        }
+    }
+
+    private void Stop()
+    {
+        cts?.Cancel();
+        cts = null;
+    }
+
+    private async Task AddCase()
+    {
+        var tempCase = new Case
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = caseName,
+                Value = caseValue.GetValueOrDefault(-1),
+                Time = Timestamp.FromDateTime(DateTime.UtcNow)
+            };
+
+        caseName = string.Empty;
+        caseValue = null;
+        await _client.AddAsync(tempCase);
+    }
+
+    private async Task RemoveCase(string id)
+    {
+        await _client.RemoveAsync(new CaseIdRequest { Id = id });
+    }
+}
