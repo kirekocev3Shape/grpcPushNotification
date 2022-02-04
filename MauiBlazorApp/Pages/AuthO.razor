@@ -1,0 +1,70 @@
+﻿@inherits MauiBlazorApp.Pages.AuthOBase
+@page "/autho"
+
+<PageTitle>Authentication</PageTitle>
+<h3>Authentication using ID4</h3>
+
+<div class="container-fluid mt-3" style='display:@(IsLoggedIn?"none":"inline")'>
+    <div class="row">
+        <div class="col">
+            <label class="folm-label">Please Login</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-primary" @onclick="Login">LogIn</button>
+        </div>
+    </div>
+</div>
+<div class="container-fluid mt-3" style='display:@(IsLoggedIn?"inline":"none")'>
+    <div class="row">
+        <div class="col">
+            <label class="form-label">Logged in 🙂</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            @if (_credentials?.Claims != null)
+            {
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Claim Type</th>
+                            <th>Claim Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var aClaim in _credentials.Claims)
+                    {
+                        <tr>
+                            <td>@aClaim.Type</td>
+                            <td>@aClaim.Value</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+           }
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <label class="form-label">Access Token expires at: @_credentials?.AccessTokenExpiration.ToString("F")</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <label class="form-label">Access Token: @_credentials?.AccessToken</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <label class="form-label">Id Token: @_credentials?.IdentityToken</label>
+        </div>
+    </div>    
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-primary" @onclick="RefreshTokens">Refresh Token</button>
+            <button class="btn btn-danger" @onclick="Logout">Logout</button>
+        </div>
+    </div>
+</div>

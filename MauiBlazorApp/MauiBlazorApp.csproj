@@ -72,6 +72,8 @@
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
+	  <PackageReference Include="IdentityModel" Version="6.0.0" />
+	  <PackageReference Include="IdentityModel.OidcClient" Version="5.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -80,6 +82,14 @@
 
 	<ItemGroup>
 	  <Folder Include="Protos\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <_MauiCompileToAdd Remove="Platforms\Android\WebAuthenticationCallbackActivity.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="Platforms\Android\WebAuthenticationCallbackActivity.cs" />
 	</ItemGroup>
 
 </Project>
