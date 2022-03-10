@@ -6,10 +6,11 @@
 
 	<span class="text-nowrap">
 		Call Blazor app
-		<a target="_blank" class="font-weight-bold" href="https://collaborationhub-client-poc-ca.yellowbeach-ccabda61.northeurope.azurecontainerapps.io/">click here</a>
+		<a target="_blank" class="font-weight-bold" href="@BlazorWasmUrl">click here</a>
 	</span>
 </div>
 
 @code {
-
+	//private const string BlazorWasmUrl = "http://10.0.2.2:5000";
+	private const string BlazorWasmUrl = "https://collaborationhub-client-poc-ca.yellowbeach-ccabda61.northeurope.azurecontainerapps.io";
 }
